@@ -57,6 +57,7 @@ fi
 # the script is going to put a simlink to the manta vcf at ./diploidSV.vcf.gz
 # modify the vcf with his doctor_manta.py script (needs input vcf, and output) -> new doc_vcf
 python doctor_manta.py diploidSV.vcf.gz $DOCTORED_MANTA_OUTPUT
+conda deactivate "$ENV_NAME"
 
 # TODO: run smoove duphold on the manta vcf -> dhanno_manta_vcf
 singularity exec bp_smoove.sif duphold -v $DOCTORED_MANTA_OUTPUT
@@ -65,5 +66,3 @@ singularity exec bp_smoove.sif duphold -v $DOCTORED_MANTA_OUTPUT
 #we will either create a conda env or activate it
 svafotate annotate -v $DUPHOLD_MANTA_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_MANTA_OUTPUT -f 0.8
 svafotate annotate -v $OG_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8
-
-#singularity build --fakeroot bp_smoove.sif docker://brentp/smoove

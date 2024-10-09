@@ -1,1 +1,9 @@
 name: sv_pipe_conda_env
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.8
+  - numpy
+  - cyvcf2
