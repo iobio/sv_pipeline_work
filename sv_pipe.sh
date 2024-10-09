@@ -28,10 +28,10 @@ mkdir -p $SCRDIR
 cp \
     run_manta_trio.sh \
     doctor_manta.py \
-    bp_smoove.sif \
-    sv_pipe_env.yml \
-    recommended_exclusions_37.bed \
-    recommended_exclusions_38.bed \
+    ./smoove/bp_smoove.sif \
+    sv_pipe.yml \
+    ./ref_files/recommended_exclusions_37.bed \
+    ./ref_files/recommended_exclusions_38.bed \
     SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz \
     $SCRDIR
 
@@ -45,7 +45,7 @@ module load \
     miniconda3/23.11.0 \
     singularity/4.1.1
 
-# Check if the environment already exists, if not create it
+# Check if the environment already exists, if not create it from the yml
 ENV_NAME="sv_pipe_conda_env"
 if conda info --envs | grep -q "$ENV_NAME"; then
     conda activate "$ENV_NAME"
