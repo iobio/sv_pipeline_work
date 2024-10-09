@@ -28,7 +28,7 @@ mkdir -p $SCRDIR
 cp \
     run_manta_trio.sh \
     doctor_manta.py \
-    smoove.sif \
+    bp_smoove.sif \
     sv_pipe_env.yml \
     recommended_exclusions_37.bed \
     recommended_exclusions_38.bed \
@@ -41,16 +41,16 @@ cd $SCRDIR
 ./run_manta_trio.sh $PBDCRAM $MOMCRAM $DADCRAM 
 
 # load the miniconda3 module will be needed for the doctor_manta.py and for the svafotate run at the end
-module load miniconda3/23.11.0
-# load the singularity module will be needed for the smoove duphold run
-module load singularity/4.1.1
+module load \
+    miniconda3/23.11.0 \
+    singularity/4.1.1
 
 # Check if the environment already exists, if not create it
 ENV_NAME="sv_pipe_conda_env"
 if conda info --envs | grep -q "$ENV_NAME"; then
     conda activate "$ENV_NAME"
 else
-    conda env create -f sv_pipe_env.yml
+    conda env create -f sv_pipe.yml
     conda activate "$ENV_NAME"
 fi
 
@@ -59,8 +59,11 @@ fi
 python doctor_manta.py diploidSV.vcf.gz $DOCTORED_MANTA_OUTPUT
 
 # TODO: run smoove duphold on the manta vcf -> dhanno_manta_vcf
+singularity exec bp_smoove.sif duphold -v $DOCTORED_MANTA_OUTPUT
 
 #Run svafotate on both files (.8 ol threshold) -> filtered svaf_vcf
 #we will either create a conda env or activate it
 svafotate annotate -v $DUPHOLD_MANTA_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_MANTA_OUTPUT -f 0.8
 svafotate annotate -v $OG_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8
+
+#singularity build --fakeroot bp_smoove.sif docker://brentp/smoove
