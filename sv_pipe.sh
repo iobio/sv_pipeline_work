@@ -59,8 +59,8 @@ fi
 python doctor_manta.py diploidSV.vcf.gz $DOCTORED_MANTA_OUTPUT
 conda deactivate "$ENV_NAME"
 
-# TODO: run smoove duphold on the manta vcf -> dhanno_manta_vcf
-singularity exec bp_smoove.sif duphold -v $DOCTORED_MANTA_OUTPUT
+# TODO: run smoove duphold on the manta vcf -> dhanno_manta_vcf CONFIRM THAT THIS IS OKAY WITH TOM DOCS ARE NOT CLEAR ON EXPECTATIONS
+singularity exec bp_smoove.sif duphold -v $DOCTORED_MANTA_OUTPUT -b $PBDCRAM $MOMCRAM $DADCRAM -f $REF_FASTA -o $DUPHOLD_MANTA_OUTPUT
 
 #Run svafotate on both files (.8 ol threshold) -> filtered svaf_vcf
 #we will either create a conda env or activate it
