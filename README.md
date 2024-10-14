@@ -23,5 +23,6 @@ The `sv_pipe.sh` is the main entry point which will run a few things. It expects
     - Puts the neccessary confidence intervals into the joint-called manta file.
 3. It will use the `bp_smoove.sif` and run the duphold module on this doctored manta file
     - Annotates the SVs with the depth change information
+    - `bp_smoove.sif` is expected to be in the `/smoove` folder in the working directory from which the entry script `sv_pipe.sh` is called
 4. Finally, it will annotate the vcfs with population AF information using [svafotate](https://github.com/fakedrtom/SVAFotate)
     - The tool looks at multiple SV cohorts and aggrigates them to annotate the variants with various allele frequency metrics. 
