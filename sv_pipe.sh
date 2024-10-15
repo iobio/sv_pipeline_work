@@ -22,8 +22,8 @@ PBDCRAM=$1
 MOMCRAM=$2
 DADCRAM=$3
 O_SMOOVE_VCF=$4
-REF_FASTA=$5
 
+REF_FASTA='/scratch/ucgd/lustre/common/data/Reference/GRCh38/human_g1k_v38_decoy_phix.fasta'
 DOCTORED_MANTA_OUTPUT="doctor_manta.vcf.gz"
 DUPHOLD_MANTA_OUTPUT="duphold_manta.vcf.gz"
 SVAF_SMOOVE_OUTPUT="svaf_smoove.vcf"
