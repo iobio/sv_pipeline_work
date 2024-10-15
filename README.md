@@ -25,4 +25,5 @@ The `sv_pipe.sh` is the main entry point which will run a few things. It expects
     - Annotates the SVs with the depth change information
     - `bp_smoove.sif` is expected to be in the `/smoove` folder in the working directory from which the entry script `sv_pipe.sh` is called
 4. Finally, it will annotate the vcfs with population AF information using [svafotate](https://github.com/fakedrtom/SVAFotate)
-    - The tool looks at multiple SV cohorts and aggrigates them to annotate the variants with various allele frequency metrics. 
+    - The tool looks at multiple SV cohorts and aggrigates them to annotate the variants with various allele frequency metrics.
+    - This requires a bed file as defined in the svafotate repo the script expects it to be located in the ref_files directory with the name `SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz`
