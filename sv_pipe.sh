@@ -9,8 +9,8 @@
 #SBATCH -o /scratch/ucgd/lustre-labs/marth/scratch/u1069837/slurm-%j.out-%N
 #SBATCH -e /scratch/ucgd/lustre-labs/marth/scratch/u1069837/slurm-%j.err-%N
 
-# We need at least 4 cpus because smoove will try to use 4 threads by default
-#SBATCH --ntasks=4
+# We need at least 4 cpus because smoove will try to use 4 threads by default running 6 for manta
+#SBATCH --ntasks=6
 #SBATCH --mem=16G
 #SBATCH --mail-type=ALL
 
@@ -38,7 +38,7 @@ cp \
     doctor_manta.py \
     ./smoove/bp_smoove.sif \
     sv_pipe.yml \
-    SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz \
+    ./ref_files/SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz \
     $SCRDIR
 
 cd $SCRDIR
@@ -71,10 +71,10 @@ python doctor_manta.py diploidSV.vcf.gz $DOCTORED_MANTA_OUTPUT
 singularity exec bp_smoove.sif duphold -v $DOCTORED_MANTA_OUTPUT -b $PBDCRAM $MOMCRAM $DADCRAM -f $REF_FASTA -o $DUPHOLD_MANTA_OUTPUT
 
 #Run svafotate on both files (.8 ol threshold) -> filtered svaf_vcf
-svafotate annotate -v $DUPHOLD_MANTA_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_MANTA_OUTPUT -f 0.8 --cpu 4
+svafotate annotate -v $DUPHOLD_MANTA_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_MANTA_OUTPUT -f 0.8 --cpu 6
 bgzip $SVAF_MANTA_OUTPUT
 
-svafotate annotate -v $O_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8 --cpu 4
+svafotate annotate -v $O_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8 --cpu 6
 bgzip $SVAF_SMOOVE_OUTPUT
 
 conda deactivate "$ENV_NAME"
