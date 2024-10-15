@@ -18,10 +18,13 @@
 #SBATCH --mail-user=emerson.lebleu@genetics.utah.edu
 
 #Inputs to the script
-PBDCRAM=$1
-MOMCRAM=$2
-DADCRAM=$3
-O_SMOOVE_VCF=$4
+YMLDEF=$1
+
+# Grab the neccessary items from the YMLDEF passed via the command
+PBDCRAM=$(grep 'proband:' "$YMLDEF" | awk '{print $2}')
+MOMCRAM=$(grep 'parent1:' "$YMLDEF" | awk '{print $2}')
+DADCRAM=$(grep 'parent2:' "$YMLDEF" | awk '{print $2}')
+O_SMOOVE_VCF=$(grep 'smoove:' "$YMLDEF" | awk '{print $2}')
 
 REF_FASTA='/scratch/ucgd/lustre/common/data/Reference/GRCh38/human_g1k_v38_decoy_phix.fasta'
 DOCTORED_MANTA_OUTPUT="doctor_manta.vcf.gz"
