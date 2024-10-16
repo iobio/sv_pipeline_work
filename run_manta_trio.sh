@@ -5,8 +5,8 @@
 
 #Set some variables
 configManta='/scratch/ucgd/lustre-work/quinlan/u0055382/src/Manta/manta-1.6.0.centos6_x86_64/bin/configManta.py'
-MEM=16
-CPU=6
+MEM=20
+CPU=10
 FASTA='/scratch/ucgd/lustre/common/data/Reference/GRCh38/human_g1k_v38_decoy_phix.fasta'
 BED='/scratch/ucgd/lustre-work/quinlan/u0055382/src/Manta/canonical_chroms.bed.gz'
 

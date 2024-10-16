@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=sv_pipeline_mosaic
-#SBATCH --time=05:00:00
+#SBATCH --time=14:00:00
 #SBATCH --account=marth-rw
 #SBATCH --partition=marth-shared-rw
 
@@ -10,8 +10,8 @@
 #SBATCH -e /scratch/ucgd/lustre-labs/marth/scratch/u1069837/slurm-%j.err-%N
 
 # We need at least 4 cpus because smoove will try to use 4 threads by default running 6 for manta
-#SBATCH --ntasks=6
-#SBATCH --mem=16G
+#SBATCH --ntasks=10
+#SBATCH --mem=20G
 #SBATCH --mail-type=ALL
 
 # This is just my email change to appropriate email
@@ -74,13 +74,13 @@ python doctor_manta.py diploidSV.vcf.gz $DOCTORED_MANTA_OUTPUT
 singularity exec bp_smoove.sif duphold -v $DOCTORED_MANTA_OUTPUT -b $PBDCRAM $MOMCRAM $DADCRAM -f $REF_FASTA -o $DUPHOLD_MANTA_OUTPUT
 
 #Run svafotate on both files (.8 ol threshold) -> filtered svaf_vcf
-svafotate annotate -v $DUPHOLD_MANTA_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_MANTA_OUTPUT -f 0.8 --cpu 6
+svafotate annotate -v $DUPHOLD_MANTA_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_MANTA_OUTPUT -f 0.8 --cpu 10
 bgzip $SVAF_MANTA_OUTPUT
 
-svafotate annotate -v $O_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8 --cpu 6
+svafotate annotate -v $O_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8 --cpu 10
 bgzip $SVAF_SMOOVE_OUTPUT
 
-conda deactivate "$ENV_NAME"
+conda deactivate
 
 # Cleanup
 rm run_manta_trio.sh \
