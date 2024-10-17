@@ -9,9 +9,9 @@
 #SBATCH -o /scratch/ucgd/lustre-labs/marth/scratch/u1069837/slurm-%j.out-%N
 #SBATCH -e /scratch/ucgd/lustre-labs/marth/scratch/u1069837/slurm-%j.err-%N
 
-# We need at least 4 cpus because smoove will try to use 4 threads by default running 6 for manta
-#SBATCH --ntasks=10
-#SBATCH --mem=20G
+# We need at least 4 cpus because smoove will try to use 4 threads by default more is okay but remember each cpu may increase the mem needed
+#SBATCH --ntasks=8
+#SBATCH --mem=32G
 #SBATCH --mail-type=ALL
 
 # This is just my email change to appropriate email
@@ -33,8 +33,9 @@ SVAF_SMOOVE_OUTPUT="svaf_smoove.vcf"
 SVAF_MANTA_OUTPUT="svaf_manta.vcf"
 
 # set up scratch directory
-SCRDIR=/scratch/ucgd/lustre-labs/marth/scratch/$USER/$SLURM_JOB_ID
-mkdir -p $SCRDIR
+# SCRDIR=/scratch/ucgd/lustre-labs/marth/scratch/$USER/$SLURM_JOB_ID
+SCRDIR=/scratch/ucgd/lustre-labs/marth/scratch/$USER/7914102
+# mkdir -p $SCRDIR
 # copy the scripts and reference files to the scratch dir
 cp \
     run_manta_trio.sh \
@@ -47,7 +48,9 @@ cp \
 cd $SCRDIR
 
 # run the the manta script run_manta_trio.sh (needs the trio's urls CRAM format) -> new joint called vcf
-./run_manta_trio.sh $PBDCRAM $MOMCRAM $DADCRAM 
+# echo "run manta trio"
+# ./run_manta_trio.sh $PBDCRAM $MOMCRAM $DADCRAM 
+# echo "manta complete"
 
 # load the miniconda3 module will be needed for the doctor_manta.py and for the svafotate run at the end
 module load \
@@ -68,17 +71,23 @@ fi
 
 # the script is going to put a simlink to the manta vcf at ./diploidSV.vcf.gz
 # modify the vcf with his doctor_manta.py script (needs input vcf, and output) -> new doc_vcf
-python doctor_manta.py diploidSV.vcf.gz $DOCTORED_MANTA_OUTPUT
+# python doctor_manta.py diploidSV.vcf.gz $DOCTORED_MANTA_OUTPUT
 
-# TODO: run smoove duphold on the manta vcf -> dhanno_manta_vcf CONFIRM THAT THIS IS OKAY WITH TOM DOCS ARE NOT CLEAR ON EXPECTATIONS
-singularity exec bp_smoove.sif duphold -v $DOCTORED_MANTA_OUTPUT -b $PBDCRAM $MOMCRAM $DADCRAM -f $REF_FASTA -o $DUPHOLD_MANTA_OUTPUT
+# run smoove duphold on the manta vcf -> dhanno_manta_vcf
+echo "Running smoove duphold"
+singularity exec bp_smoove.sif duphold -v $DOCTORED_MANTA_OUTPUT -b $PBDCRAM $MOMCRAM $DADCRAM -f $REF_FASTA -o $DUPHOLD_MANTA_OUTPUT -p 4
+echo "duphold complete"
 
 #Run svafotate on both files (.8 ol threshold) -> filtered svaf_vcf
-svafotate annotate -v $DUPHOLD_MANTA_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_MANTA_OUTPUT -f 0.8 --cpu 10
+echo "running svafotate on manta"
+svafotate annotate -v $DUPHOLD_MANTA_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_MANTA_OUTPUT -f 0.8 --cpu 4
 bgzip $SVAF_MANTA_OUTPUT
+echo "manta svafotate complete"
 
-svafotate annotate -v $O_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8 --cpu 10
+echo "running svafotate on smoove"
+svafotate annotate -v $O_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8 --cpu 4
 bgzip $SVAF_SMOOVE_OUTPUT
+echo "smoove svafotate complete"
 
 conda deactivate
 
