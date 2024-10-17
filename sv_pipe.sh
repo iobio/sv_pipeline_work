@@ -75,7 +75,7 @@ fi
 
 # run smoove duphold on the manta vcf -> dhanno_manta_vcf
 echo "Running smoove duphold"
-singularity exec bp_smoove.sif duphold -v $DOCTORED_MANTA_OUTPUT -b $PBDCRAM $MOMCRAM $DADCRAM -f $REF_FASTA -o $DUPHOLD_MANTA_OUTPUT -p 4
+singularity exec bp_smoove.sif duphold -f $REF_FASTA -v $DOCTORED_MANTA_OUTPUT -p 4 -o $DUPHOLD_MANTA_OUTPUT $PBDCRAM $MOMCRAM $DADCRAM
 echo "duphold complete"
 
 #Run svafotate on both files (.8 ol threshold) -> filtered svaf_vcf
