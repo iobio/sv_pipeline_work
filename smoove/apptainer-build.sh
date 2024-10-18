@@ -1,6 +1,7 @@
 #!/bin/bash
 
 basedir=$(pwd)
+htslib_version=0.13
 
 git clone --depth 1 https://github.com/ebiggers/libdeflate.git
 cd libdeflate
