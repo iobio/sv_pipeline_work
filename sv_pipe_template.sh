@@ -1,21 +1,23 @@
 #!/bin/bash
 
-#SBATCH --job-name=sv_pipeline_mosaic
+#SBATCH --job-name=<any_name_you_want>
 #SBATCH --time=14:00:00
+
+# Your Account and Partition as Applicable
 #SBATCH --account=marth-rw
 #SBATCH --partition=marth-shared-rw
 
-# Output in my directory in the scratch space
-#SBATCH -o /scratch/ucgd/lustre-labs/marth/scratch/u1069837/slurm-%j.out-%N
-#SBATCH -e /scratch/ucgd/lustre-labs/marth/scratch/u1069837/slurm-%j.err-%N
+# Output in your directory in the scratch space
+#SBATCH -o /scratch/ucgd/lustre-labs/marth/scratch/<your_uid>/slurm-%j.out-%N
+#SBATCH -e /scratch/ucgd/lustre-labs/marth/scratch/<your_uid>/slurm-%j.err-%N
 
 # We need at least 4 cpus because smoove will try to use 4 threads by default more is okay but remember each cpu may increase the mem needed
 #SBATCH --ntasks=8
 #SBATCH --mem=32G
 #SBATCH --mail-type=ALL
 
-# This is just my email change to appropriate email
-#SBATCH --mail-user=emerson.lebleu@genetics.utah.edu
+# The email to send system messages to
+#SBATCH --mail-user=<your_email>
 
 #Inputs to the script
 YMLDEF=$1

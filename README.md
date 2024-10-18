@@ -22,13 +22,13 @@ I have a `.sif` that can be used in our computing environment already but if you
 
 The `sv_pipe.sh` is the **main entry point** which will run a few things. It is intended to be run as a `slurm` script because it is resource intensive and runs for quite a while with the current settings (10+ hours). **The input for the `sv_pipe.sh` is a `.yml` file.**
 
-The pipeline uses a trio of `CRAM` files in one folder with their associated indexes, an already joint called smoove `vcf` for this same trio **AND** a `.sif` file of the smoove tool (See #3 Below). 
+The pipeline uses a trio of `CRAM` files in one folder with their associated indexes, an already joint called smoove `vcf` for this same trio, a svafotate population bed file in the `/ref_files`, **AND** a `.sif` file of the smoove tool (See #3 Below). 
 
-The cram folder path, sample names, and path to the smoove vcf are defined from within the yaml file (*see example in next section*)
+The cram folder path, sample names, and path to the smoove vcf are defined from within the yaml file (*see example in next section*). 
 
 Example Call:
 ```
-sbatch sv_pipe.sh my_sample_yaml.yml
+sbatch sv_pipe_personal.sh my_sample_yaml.yml
 ```
 
 #### The sv_pipe script runs the following additional scripts in this order
@@ -62,6 +62,56 @@ parent1Id: 1234-2
 parent2Id: 1234-3
 
 ```
+The `sv_pipe.yml` within the repo is internal to the script and is used to define the python environment for other tools, not as the input to the pipeline.
 
 ## Running Instructions In Order
 
+1. Go into your folder within the shared workspace something like:
+```
+cd /scratch/ucgd/lustre-labs/marth/scratch/your_uid
+```
+
+2. Clone this repository then `cd` into it
+```
+git clone https://github.com/iobio/sv_pipeline_work.git
+
+cd sv_pipeline_work
+```
+
+3. Get `.sif` location and copy it into the `./smoove` folder
+```
+cp /example_path_to_sif.sif ./smoove
+```
+
+4. Get the svafotate bed reference and copy it into `./ref_files` with the required name `SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz`
+```
+wget -O ./ref_files SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz https://zenodo.org/records/11642574/files/SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz
+```
+**Please note this is the current (18 OCT 2024) location of the recommended bed but this could change take a look at the current recommended bed location on the [svafotate](https://github.com/fakedrtom/SVAFotate?tab=readme-ov-file) repository.**
+
+5. Make your yaml and add your file paths to it using the example in the previous section (do this in the yml_defs folder as this folder is on the .gitignore list)
+```
+touch ./yml_defs/my_sample_yaml.yml
+```
+*edit file with information needed*
+
+6. Copy the `sv_pipe_template.sh` into a new file named `sv_pipe_personal.sh` so that you have your own untracked version of the script.
+```
+cp sv_pipe_template.sh sv_pipe_personal.sh
+```
+
+7. Edit all the **< >** fields in the #SBATCH directives in your `sv_pipe_personal.sh`, the list below should be the ones that need editing
+```
+#SBATCH --job-name=<any_name_you_want>
+#SBATCH -o /scratch/ucgd/lustre-labs/marth/scratch/<your_uid>/slurm-%j.out-%N
+#SBATCH -e /scratch/ucgd/lustre-labs/marth/scratch/<your_uid>/slurm-%j.err-%N
+#SBATCH --mail-user=<your_email>
+```
+8. Run your personal script
+```
+sbatch sv_pipe_personal.sh ./yml_defs/my_sample_yaml.yml
+```
+
+**If this runs you should see the slurm ouputs appear in your own scratch folder, and a folder should appear that corresponds to your sample analysis, work will take place in that folder aside from the slurm logging/outputs and your final files should be present within that folder as well.**
+
+The final results of this pipeline are two files the `svaf_smoove.vcf.gz` & `svaf_manta.vcf.gz`
