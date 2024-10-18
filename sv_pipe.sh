@@ -36,11 +36,12 @@ DUPHOLD_MANTA_OUTPUT="duphold_manta.vcf.gz"
 SVAF_SMOOVE_OUTPUT="svaf_smoove.vcf"
 SVAF_MANTA_OUTPUT="svaf_manta.vcf"
 
-# set up scratch directory
-# SCRDIR=/scratch/ucgd/lustre-labs/marth/scratch/$USER/$SLURM_JOB_ID
-SCRDIR=/scratch/ucgd/lustre-labs/marth/scratch/$USER/7914102
-# mkdir -p $SCRDIR
-# copy the scripts and reference files to the scratch dir
+# Set up scratch directory
+FOLDERNAME=${PROBANDID}_${SLURM_JOB_ID}
+SCRDIR=/scratch/ucgd/lustre-labs/marth/scratch/$USER/$FOLDERNAME
+mkdir -p $SCRDIR
+
+# Copy the scripts and reference files to the scratch dir
 cp \
     run_manta_trio.sh \
     doctor_manta.py \
@@ -50,14 +51,14 @@ cp \
     $SCRDIR
 
 cd $SCRDIR
-# mkdir "duphold_run"
+mkdir "duphold_run"
 
-# run the the manta script run_manta_trio.sh (needs the trio's urls CRAM format) -> new joint called vcf
-# echo "run manta trio"
-# ./run_manta_trio.sh $PBDCRAM $MOMCRAM $DADCRAM 
-# echo "manta complete"
+# Run the the manta script run_manta_trio.sh (needs the trio's urls CRAM format) -> new joint called vcf
+echo "run manta trio"
+./run_manta_trio.sh $CRAMSPATH/$PROBANDID.cram $CRAMSPATH/$PARENT1ID.cram $CRAMSPATH/$PARENT2ID.cram
+echo "manta complete"
 
-# load the miniconda3 module will be needed for the doctor_manta.py and for the svafotate run at the end
+# Load the miniconda3 module will be needed for the doctor_manta.py and for the svafotate run
 module load \
     miniconda3/23.11.0 \
     singularity/4.1.1 
@@ -74,43 +75,39 @@ else
     pip install git+https://github.com/fakedrtom/SVAFotate.git
 fi
 
-# the script is going to put a simlink to the manta vcf at ./diploidSV.vcf.gz
-# modify the vcf with his doctor_manta.py script (needs input vcf, and output) -> new doc_vcf
-# python doctor_manta.py diploidSV.vcf.gz $DOCTORED_MANTA_OUTPUT
+# Modify the manta vcf (./diploidSV.vcf.gz) with his doctor_manta.py (needs input vcf, and output) -> new doc_vcf
+python doctor_manta.py diploidSV.vcf.gz $DOCTORED_MANTA_OUTPUT
 
-# BIND_DIR=$(pwd -P)
-# cp $DOCTORED_MANTA_OUTPUT ./duphold_run/$DOCTORED_MANTA_OUTPUT
+BIND_DIR=$(pwd -P)
+cp $DOCTORED_MANTA_OUTPUT ./duphold_run/$DOCTORED_MANTA_OUTPUT
 
-# run smoove duphold on the manta vcf -> dhanno_manta_vcf
-# echo "Run Duphold"
+# Run smoove duphold on the manta vcf -> dhanno_manta_vcf
+echo "Run Duphold"
+singularity exec \
+    --bind $BIND_DIR/duphold_run:/output \
+    --bind $CRAMSPATH:/crams \
+    --bind $FASTA_FOLDER:/fastas \
+    bp_smoove.sif \
+    smoove duphold \
+    -f /fastas/$REF_FASTA  \
+    -v /output/$DOCTORED_MANTA_OUTPUT \
+    -o /output/$DUPHOLD_MANTA_OUTPUT \
+    /crams/$PROBANDID.cram /crams/$PARENT1ID.cram /crams/$PARENT2ID.cram
+echo "duphold complete"
 
-# singularity exec \
-#     --bind $BIND_DIR/duphold_run:/output \
-#     --bind $CRAMSPATH:/crams \
-#     --bind $FASTA_FOLDER:/fastas \
-#     bp_smoove.sif \
-#     smoove duphold \
-#     -f /fastas/$REF_FASTA  \
-#     -v /output/$DOCTORED_MANTA_OUTPUT \
-#     -o /output/$DUPHOLD_MANTA_OUTPUT \
-#     /crams/$PROBANDID.cram /crams/$PARENT1ID.cram /crams/$PARENT2ID.cram
+# Move the duphold output to the main folder for use in svafotate
+mv ./duphold_run/$DUPHOLD_MANTA_OUTPUT ./$DUPHOLD_MANTA_OUTPUT
 
-# echo "duphold complete"
-
-# mv ./duphold_run/$DUPHOLD_MANTA_OUTPUT ./$DUPHOLD_MANTA_OUTPUT
-
-#Run svafotate on both files (.8 ol threshold) -> filtered svaf_vcf
+# Run svafotate on both files (.8 ol threshold) -> filtered svaf_vcf
 echo "Run svafotate on MANTA"
-
 svafotate annotate -v ./$DUPHOLD_MANTA_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_MANTA_OUTPUT -f 0.8 --cpu 4
 bgzip $SVAF_MANTA_OUTPUT
-
 echo "manta svafotate complete"
 
-# echo "running svafotate on smoove"
-# svafotate annotate -v $O_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8 --cpu 4
-# bgzip $SVAF_SMOOVE_OUTPUT
-# echo "smoove svafotate complete"
+echo "running svafotate on smoove"
+svafotate annotate -v $O_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8 --cpu 4
+bgzip $SVAF_SMOOVE_OUTPUT
+echo "smoove svafotate complete"
 
 conda deactivate
 
