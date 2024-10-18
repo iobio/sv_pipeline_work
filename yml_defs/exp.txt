@@ -1,0 +1,2 @@
+# DONT DELETE THIS FILE
+# This folder should ignore all other files but this one. It is a place for your custom .yml files

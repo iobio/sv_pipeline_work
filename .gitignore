@@ -2,5 +2,5 @@ bp_smoove.sif
 cases.txt
 SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz
 yml_defs/*
-!yml_defs/ .gitignore
+!yml_defs/exp.txt
 sv_pipe_personal.sh
