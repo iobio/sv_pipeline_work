@@ -21,12 +21,16 @@
 YMLDEF=$1
 
 # Grab the neccessary items from the YMLDEF passed via the command
-PBDCRAM=$(grep 'proband:' "$YMLDEF" | awk '{print $2}')
-MOMCRAM=$(grep 'parent1:' "$YMLDEF" | awk '{print $2}')
-DADCRAM=$(grep 'parent2:' "$YMLDEF" | awk '{print $2}')
+CRAMSPATH=$(grep 'cramsPath:' "$YMLDEF" | awk '{print $2}')
+PROBANDID=$(grep 'probandId:' "$YMLDEF" | awk '{print $2}')
+PARENT1ID=$(grep 'parent1Id:' "$YMLDEF" | awk '{print $2}')
+PARENT2ID=$(grep 'parent2Id:' "$YMLDEF" | awk '{print $2}')
+
 O_SMOOVE_VCF=$(grep 'smoove:' "$YMLDEF" | awk '{print $2}')
 
-REF_FASTA='/scratch/ucgd/lustre/common/data/Reference/GRCh38/human_g1k_v38_decoy_phix.fasta'
+REF_FASTA='human_g1k_v38_decoy_phix.fasta'
+FASTA_FOLDER='/scratch/ucgd/lustre/common/data/Reference/GRCh38'
+
 DOCTORED_MANTA_OUTPUT="doctor_manta.vcf.gz"
 DUPHOLD_MANTA_OUTPUT="duphold_manta.vcf.gz"
 SVAF_SMOOVE_OUTPUT="svaf_smoove.vcf"
@@ -46,6 +50,7 @@ cp \
     $SCRDIR
 
 cd $SCRDIR
+mkdir "duphold_run"
 
 # run the the manta script run_manta_trio.sh (needs the trio's urls CRAM format) -> new joint called vcf
 # echo "run manta trio"
@@ -55,7 +60,7 @@ cd $SCRDIR
 # load the miniconda3 module will be needed for the doctor_manta.py and for the svafotate run at the end
 module load \
     miniconda3/23.11.0 \
-    singularity/4.1.1
+    singularity/4.1.1 
 
 # Check if the environment already exists, if not create it from the yml
 ENV_NAME="sv_pipe_conda_env"
@@ -73,27 +78,49 @@ fi
 # modify the vcf with his doctor_manta.py script (needs input vcf, and output) -> new doc_vcf
 # python doctor_manta.py diploidSV.vcf.gz $DOCTORED_MANTA_OUTPUT
 
+BIND_DIR=$(pwd -P)
+cp $DOCTORED_MANTA_OUTPUT ./duphold_run/$DOCTORED_MANTA_OUTPUT
+
 # run smoove duphold on the manta vcf -> dhanno_manta_vcf
-echo "Running smoove duphold"
-singularity exec bp_smoove.sif duphold -f $REF_FASTA -v $DOCTORED_MANTA_OUTPUT -p 4 -o $DUPHOLD_MANTA_OUTPUT $PBDCRAM $MOMCRAM $DADCRAM
+echo "Run Duphold"
+
+singularity exec \
+    --bind $BIND_DIR/duphold_run:/output \
+    --bind $CRAMSPATH:/crams \
+    --bind $FASTA_FOLDER:/fastas \
+    bp_smoove.sif \
+    smoove duphold \
+    -f /fastas/$REF_FASTA  \
+    -v /output/$DOCTORED_MANTA_OUTPUT \
+    -o /output/$DUPHOLD_MANTA_OUTPUT \
+    /crams/$PROBANDID.cram /crams/$PARENT1ID.cram /crams/$PARENT2ID.cram
+
 echo "duphold complete"
 
+mv ./duphold_run/$DUPHOLD_MANTA_OUTPUT ./$DUPHOLD_MANTA_OUTPUT
+
 #Run svafotate on both files (.8 ol threshold) -> filtered svaf_vcf
-echo "running svafotate on manta"
-svafotate annotate -v $DUPHOLD_MANTA_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_MANTA_OUTPUT -f 0.8 --cpu 4
+echo "Run svafotate on MANTA"
+
+svafotate annotate -v ./duphold_run/$DUPHOLD_MANTA_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_MANTA_OUTPUT -f 0.8 --cpu 4
 bgzip $SVAF_MANTA_OUTPUT
+
 echo "manta svafotate complete"
 
-echo "running svafotate on smoove"
-svafotate annotate -v $O_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8 --cpu 4
-bgzip $SVAF_SMOOVE_OUTPUT
-echo "smoove svafotate complete"
+# echo "running svafotate on smoove"
+# svafotate annotate -v $O_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8 --cpu 4
+# bgzip $SVAF_SMOOVE_OUTPUT
+# echo "smoove svafotate complete"
 
 conda deactivate
 
 # Cleanup
 rm run_manta_trio.sh \
+    runWorkflow.py \
+    runWorkflow.py.config.pickle \
     doctor_manta.py \
-    rm bp_smoove.sif \
+    bp_smoove.sif \
     sv_pipe.yml \
-    SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz 
+    SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz
+
+rm -r ./duphold_run
