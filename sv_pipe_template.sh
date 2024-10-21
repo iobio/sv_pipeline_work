@@ -12,8 +12,8 @@
 #SBATCH -e /scratch/ucgd/lustre-labs/marth/scratch/<your_uid>/slurm-%j.err-%N
 
 # We need at least 4 cpus because smoove will try to use 4 threads by default more is okay but remember each cpu may increase the mem needed
-#SBATCH --ntasks=8
-#SBATCH --mem=32G
+#SBATCH --ntasks=20
+#SBATCH --mem=80G
 #SBATCH --mail-type=ALL
 
 # The email to send system messages to
@@ -102,12 +102,12 @@ mv ./duphold_run/$DUPHOLD_MANTA_OUTPUT ./$DUPHOLD_MANTA_OUTPUT
 
 # Run svafotate on both files (.8 ol threshold) -> filtered svaf_vcf
 echo "Run svafotate on MANTA"
-svafotate annotate -v ./$DUPHOLD_MANTA_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_MANTA_OUTPUT -f 0.8 --cpu 4
+svafotate annotate -v ./$DUPHOLD_MANTA_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_MANTA_OUTPUT -f 0.8 --cpu 8
 bgzip $SVAF_MANTA_OUTPUT
 echo "manta svafotate complete"
 
 echo "running svafotate on smoove"
-svafotate annotate -v $O_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8 --cpu 4
+svafotate annotate -v $O_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8 --cpu 8
 bgzip $SVAF_SMOOVE_OUTPUT
 echo "smoove svafotate complete"
 
