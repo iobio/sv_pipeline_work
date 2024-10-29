@@ -34,7 +34,7 @@ REF_FASTA='human_g1k_v38_decoy_phix.fasta'
 FASTA_FOLDER='/scratch/ucgd/lustre/common/data/Reference/GRCh38'
 
 SVAF_SMOOVE_OUTPUT="svaf_smoove.vcf"
-DSMOOVEFILE=deno_smoove.vcf.gz
+DSMOOVEFILE=filtered_smoove.vcf.gz
 
 # Set up scratch directory
 FOLDERNAME=${PROBANDID}_${SLURM_JOB_ID}

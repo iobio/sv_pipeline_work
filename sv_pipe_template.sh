@@ -37,6 +37,8 @@ DOCTORED_MANTA_OUTPUT="doctor_manta.vcf.gz"
 DUPHOLD_MANTA_OUTPUT="duphold_manta.vcf.gz"
 SVAF_SMOOVE_OUTPUT="svaf_smoove.vcf"
 SVAF_MANTA_OUTPUT="svaf_manta.vcf"
+DMANTAFILE=filtered_manta.vcf.gz
+DSMOOVEFILE=filtered_smoove.vcf.gz
 
 # Set up scratch directory
 FOLDERNAME=${PROBANDID}_${SLURM_JOB_ID}
@@ -63,7 +65,8 @@ echo "manta complete"
 # Load the miniconda3 module will be needed for the doctor_manta.py and for the svafotate run
 module load \
     miniconda3/23.11.0 \
-    singularity/4.1.1 
+    singularity/4.1.1 \
+    bcftools/1.16 
 
 # Check if the environment already exists, if not create it from the yml
 ENV_NAME="sv_pipe_conda_env"
@@ -112,6 +115,9 @@ bgzip $SVAF_SMOOVE_OUTPUT
 echo "smoove svafotate complete"
 
 conda deactivate
+
+bcftools view -i '((INFO/SVTYPE="DEL" && FMT/DHFFC[0]<0.7) || (INFO/SVTYPE="DUP" && FMT/DHBFC[0]>1.3) || (INFO/SVTYPE!="DEL" && INFO/SVTYPE!="DUP")) && INFO/Max_AF<0.05 && ((GT[0]="1/1" && GT[1]!="1/1" && GT[2]!="1/1") || ((GT[0]="1/0" || GT[0]="0/1") && GT[1]="0/0" && GT[2]="0/0") || (GT[0]="0/0"))' $SVAF_MANTA_OUTPUT -Oz -o $DMANTAFILE
+bcftools view -i '((INFO/SVTYPE="DEL" && FMT/DHFFC[0]<0.7) || (INFO/SVTYPE="DUP" && FMT/DHBFC[0]>1.3) || (INFO/SVTYPE!="DEL" && INFO/SVTYPE!="DUP")) && INFO/Max_AF<0.05 && ((GT[0]="1/1" && GT[1]!="1/1" && GT[2]!="1/1") || ((GT[0]="1/0" || GT[0]="0/1") && GT[1]="0/0" && GT[2]="0/0") || (GT[0]="0/0"))' $SVAF_SMOOVE_OUTPUT -Oz -o $DSMOOVEFILE
 
 # Cleanup
 rm run_manta_trio.sh \
