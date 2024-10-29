@@ -2,6 +2,13 @@
 
 This repo contains a few bioinformatics tools chained together with the goal of creating a conservative structural variant quality and annotation pipeline to complement the mosaic platform and sv.iobio application.
 
+## Sections
+
+[Background](#background-information)
+[Scripts Information](#scripts)
+[Yaml Examples](#yaml-example)
+[Running Instructions](#running-instructions-in-order)
+
 **NOTE**
 
 As written this is really only intended to be used by our team in our own internal environment. However parts could be modified for other purposes in theory. 
