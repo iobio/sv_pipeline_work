@@ -1,0 +1,10 @@
+# FULL PIPE EXAMPLE replace the whole <statement> statement including the <> with the variable
+
+# NO TRAILING SLASH ON PATHS
+smoove: </path to your smoove file>
+cramsPath: </path to the crams folder without trailing />
+
+# NO FILE EXT ON IDS
+probandId: </the file name of proband cram without the ext.>
+parent1Id: <the file name of one parent cram without the ext.>
+parent2Id: <the file name of other parent cram without the ext.>
