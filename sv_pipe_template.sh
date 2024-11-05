@@ -118,9 +118,14 @@ bcftools view -i '((INFO/SVTYPE="DEL" && FMT/DHFFC[0]<0.7) || (INFO/SVTYPE="DUP"
 rm run_manta_trio.sh \
     runWorkflow.py \
     runWorkflow.py.config.pickle \
+    diploidSV.vcf.gz \
     doctor_manta.py \
+    doctor_manta.vcf.gz \
+    duphold_manta.vcf.gz \
     bp_smoove.sif \
     sv_pipe.yml \
-    SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz
+    SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz \
 
 rm -r ./duphold_run
+rm -r ./results
+rm -r ./workspace
