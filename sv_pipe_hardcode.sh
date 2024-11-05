@@ -1,22 +1,17 @@
 #!/bin/bash
 
-#SBATCH --job-name=sv_pipe_run
+#SBATCH --job-name=sv_pipeline
 #SBATCH --time=14:00:00
 
-# Your Account and Partition as Applicable
 #SBATCH --account=marth-rw
-#SBATCH --partition=marth-shared-rw
+#SBATCH --partition=marth-rw
 
-# Output in your directory in the scratch space
-#SBATCH -o /scratch/ucgd/lustre-labs/marth/scratch/<your_uid>/slurm-%j.out-%N
-#SBATCH -e /scratch/ucgd/lustre-labs/marth/scratch/<your_uid>/slurm-%j.err-%N
+#SBATCH -o ./slurm-%j.out-%N
+#SBATCH -e ./slurm-%j.err-%N
 
-# We need at least 4 cpus because smoove will try to use 4 threads by default more is okay but remember each cpu may increase the mem needed
-#SBATCH --ntasks=20
-#SBATCH --mem=80G
+#SBATCH --nodes=1
 #SBATCH --mail-type=ALL
 
-# The email to send system messages to
 #SBATCH --mail-user=<your_email>
 
 #Inputs to the script
@@ -42,8 +37,9 @@ DSMOOVEFILE=filtered_smoove.vcf.gz
 
 # Set up scratch directory
 FOLDERNAME=${PROBANDID}_${SLURM_JOB_ID}
-SCRDIR=/scratch/ucgd/lustre-labs/marth/scratch/$USER/$FOLDERNAME
-mkdir -p $SCRDIR
+SCRDIR=./$FOLDERNAME
+mkdir $SCRDIR
+cd $SCRDIR
 
 # Copy the scripts and reference files to the scratch dir
 cp \
@@ -52,9 +48,8 @@ cp \
     /scratch/ucgd/lustre-labs/marth/scratch/u1069837/data/sv_pipeline_work/smoove/bp_smoove.sif \
     /scratch/ucgd/lustre-labs/marth/scratch/u1069837/data/sv_pipeline_work/sv_pipe.yml \
     /scratch/ucgd/lustre-labs/marth/scratch/u1069837/data/sv_pipeline_work/ref_files/SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz \
-    $SCRDIR
+    .
 
-cd $SCRDIR
 mkdir "duphold_run"
 
 # Run the the manta script run_manta_trio.sh (needs the trio's urls CRAM format) -> new joint called vcf
@@ -105,12 +100,12 @@ mv ./duphold_run/$DUPHOLD_MANTA_OUTPUT ./$DUPHOLD_MANTA_OUTPUT
 
 # Run svafotate on both files (.8 ol threshold) -> filtered svaf_vcf
 echo "Run svafotate on MANTA"
-svafotate annotate -v ./$DUPHOLD_MANTA_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_MANTA_OUTPUT -f 0.8 --cpu 8
+svafotate annotate -v ./$DUPHOLD_MANTA_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_MANTA_OUTPUT -f 0.8 --cpu 12
 bgzip $SVAF_MANTA_OUTPUT
 echo "manta svafotate complete"
 
 echo "running svafotate on smoove"
-svafotate annotate -v $O_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8 --cpu 8
+svafotate annotate -v $O_SMOOVE_VCF -b SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz -o $SVAF_SMOOVE_OUTPUT -f 0.8 --cpu 12
 bgzip $SVAF_SMOOVE_OUTPUT
 echo "smoove svafotate complete"
 

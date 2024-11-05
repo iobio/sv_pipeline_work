@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# THIS SCRIPT IS MINIMIZED FOR 
-
+# THIS SCRIPT IS MINIMIZED FOR SMOOVE RUN ONLY
 #SBATCH --job-name=<any_name_you_want>
 #SBATCH --time=10:00:00
 
@@ -10,8 +9,8 @@
 #SBATCH --partition=marth-shared-rw
 
 # Output in your directory in the scratch space
-#SBATCH -o /scratch/ucgd/lustre-labs/marth/scratch/<your_uid>/slurm-%j.out-%N
-#SBATCH -e /scratch/ucgd/lustre-labs/marth/scratch/<your_uid>/slurm-%j.err-%N
+#SBATCH -o ./slurm-%j.out-%N
+#SBATCH -e ./slurm-%j.err-%N
 
 # Since this isnt calling manta cutting down the mem and cpu usage
 #SBATCH --ntasks=10
@@ -38,16 +37,15 @@ DSMOOVEFILE=filtered_smoove.vcf.gz
 
 # Set up scratch directory
 FOLDERNAME=${PROBANDID}_${SLURM_JOB_ID}
-SCRDIR=/scratch/ucgd/lustre-labs/marth/scratch/$USER/$FOLDERNAME
-mkdir -p $SCRDIR
+SCRDIR=./$FOLDERNAME
+mkdir $SCRDIR
+cd $SCRDIR
 
 # Copy the scripts and reference files to the scratch dir
 cp \
     sv_pipe.yml \
     ./ref_files/SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz \
-    $SCRDIR
-
-cd $SCRDIR
+    .
 
 # Load the miniconda3 module will be needed for the doctor_manta.py and for the svafotate run
 module load \
