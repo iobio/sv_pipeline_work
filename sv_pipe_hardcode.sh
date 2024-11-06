@@ -114,7 +114,7 @@ conda deactivate
 bcftools view -i '((INFO/SVTYPE="DEL" && FMT/DHFFC[0]<0.7) || (INFO/SVTYPE="DUP" && FMT/DHBFC[0]>1.3) || (INFO/SVTYPE!="DEL" && INFO/SVTYPE!="DUP")) && INFO/Max_AF<0.05 && ((GT[0]="1/1" && GT[1]!="1/1" && GT[2]!="1/1") || ((GT[0]="1/0" || GT[0]="0/1") && GT[1]="0/0" && GT[2]="0/0") || (GT[0]="0/0"))' $SVAF_MANTA_OUTPUT.gz -Oz -o $DMANTAFILE
 bcftools view -i '((INFO/SVTYPE="DEL" && FMT/DHFFC[0]<0.7) || (INFO/SVTYPE="DUP" && FMT/DHBFC[0]>1.3) || (INFO/SVTYPE!="DEL" && INFO/SVTYPE!="DUP")) && INFO/Max_AF<0.05 && ((GT[0]="1/1" && GT[1]!="1/1" && GT[2]!="1/1") || ((GT[0]="1/0" || GT[0]="0/1") && GT[1]="0/0" && GT[2]="0/0") || (GT[0]="0/0"))' $SVAF_SMOOVE_OUTPUT.gz -Oz -o $DSMOOVEFILE
 
-# Cleanup
+# # Cleanup
 rm run_manta_trio.sh \
     runWorkflow.py \
     runWorkflow.py.config.pickle \
@@ -125,6 +125,10 @@ rm run_manta_trio.sh \
     bp_smoove.sif \
     sv_pipe.yml \
     SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz \
+    workflow.error.log.txt \
+    workflow.exitcode.txt \
+    workflow.warning.log.txt
+
 
 rm -r ./duphold_run
 rm -r ./results
