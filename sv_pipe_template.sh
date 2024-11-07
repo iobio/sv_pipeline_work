@@ -111,9 +111,54 @@ echo "smoove svafotate complete"
 
 conda deactivate
 
-bcftools view -i '((INFO/SVTYPE="DEL" && FMT/DHFFC[0]<0.7) || (INFO/SVTYPE="DUP" && FMT/DHBFC[0]>1.3) || (INFO/SVTYPE!="DEL" && INFO/SVTYPE!="DUP")) && INFO/Max_AF<0.05 && ((GT[0]="1/1" && GT[1]!="1/1" && GT[2]!="1/1") || ((GT[0]="1/0" || GT[0]="0/1") && GT[1]="0/0" && GT[2]="0/0") || (GT[0]="0/0"))' $SVAF_MANTA_OUTPUT -Oz -o $DMANTAFILE
-bcftools view -i '((INFO/SVTYPE="DEL" && FMT/DHFFC[0]<0.7) || (INFO/SVTYPE="DUP" && FMT/DHBFC[0]>1.3) || (INFO/SVTYPE!="DEL" && INFO/SVTYPE!="DUP")) && INFO/Max_AF<0.05 && ((GT[0]="1/1" && GT[1]!="1/1" && GT[2]!="1/1") || ((GT[0]="1/0" || GT[0]="0/1") && GT[1]="0/0" && GT[2]="0/0") || (GT[0]="0/0"))' $SVAF_SMOOVE_OUTPUT -Oz -o $DSMOOVEFILE
+# Load sample names from the VCF file into the SAMPLES array
+SAMPLES=($(bcftools query -l "$SVAF_SMOOVE_OUTPUT.gz"))
+PROB_INDEX=-1
 
+# Find the index of the proband sample in the SAMPLES array
+for i in "${!SAMPLES[@]}"; do
+    if [[ "${SAMPLES[$i]}" == "$PROBANDID" ]]; then
+        PROB_INDEX=$i
+        break
+    fi
+done
+
+# Check if the proband index was found
+if [[ "$PROB_INDEX" -lt 0 ]]; then
+    echo "Error: Proband sample not found in VCF file."
+    exit 1
+fi
+
+# Assign the other two indices dynamically
+OTHER_INDICES=($(seq 0 $((${#SAMPLES[@]} - 1)) | grep -v "$PROB_INDEX"))
+
+# Ensure we only have two other indices to work with
+if [[ ${#OTHER_INDICES[@]} -ne 2 ]]; then
+    echo "Error: Expected exactly two other samples, found ${#OTHER_INDICES[@]}."
+    exit 1
+fi
+
+OTHER_INDEX1=${OTHER_INDICES[0]}
+OTHER_INDEX2=${OTHER_INDICES[1]}
+
+# Construct the bcftools command using the dynamically determined indices
+bcftools view -i '((INFO/SVTYPE="DEL" && FMT/DHFFC['"$PROB_INDEX"']<0.7) || \
+                   (INFO/SVTYPE="DUP" && FMT/DHBFC['"$PROB_INDEX"']>1.3) || \
+                   (INFO/SVTYPE!="DEL" && INFO/SVTYPE!="DUP")) && \
+                   INFO/Max_AF<0.05 && \
+                   ((GT['"$PROB_INDEX"']="1/1" && GT['"$OTHER_INDEX1"']!="1/1" && GT['"$OTHER_INDEX2"']!="1/1") || \
+                   ((GT['"$PROB_INDEX"']="1/0" || GT['"$PROB_INDEX"']="0/1") && GT['"$OTHER_INDEX1"']="0/0" && GT['"$OTHER_INDEX2"']="0/0") || \
+                   (GT['"$PROB_INDEX"']="0/0"))' "$SVAF_SMOOVE_OUTPUT.gz" -Oz -o "$DSMOOVEFILE"
+
+# Construct the bcftools command using the dynamically determined indices
+bcftools view -i '((INFO/SVTYPE="DEL" && FMT/DHFFC['"$PROB_INDEX"']<0.7) || \
+                   (INFO/SVTYPE="DUP" && FMT/DHBFC['"$PROB_INDEX"']>1.3) || \
+                   (INFO/SVTYPE!="DEL" && INFO/SVTYPE!="DUP")) && \
+                   INFO/Max_AF<0.05 && \
+                   ((GT['"$PROB_INDEX"']="1/1" && GT['"$OTHER_INDEX1"']!="1/1" && GT['"$OTHER_INDEX2"']!="1/1") || \
+                   ((GT['"$PROB_INDEX"']="1/0" || GT['"$PROB_INDEX"']="0/1") && GT['"$OTHER_INDEX1"']="0/0" && GT['"$OTHER_INDEX2"']="0/0") || \
+                   (GT['"$PROB_INDEX"']="0/0"))' "$SVAF_MANTA_OUTPUT.gz" -Oz -o "$DMANTAFILE"
+                   
 # Cleanup
 rm run_manta_trio.sh \
     runWorkflow.py \
