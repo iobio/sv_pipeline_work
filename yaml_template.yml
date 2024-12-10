@@ -1,10 +1,12 @@
 # FULL PIPE EXAMPLE replace the whole <statement> statement including the <> with the variable
 
-# NO TRAILING SLASH ON PATHS
+# NO TRAILING SLASH ON THESE PATHs
+# the smoove path can have the .vcf.gz extension here
 smoove: </path to your smoove file>
 cramsPath: </path to the crams folder without trailing />
 
-# NO FILE EXT ON IDS
+# NO FILE EXT ON IDS 
+# this is the file name we use it to grab the corresponding cram, also if you want the filtering these should be named the same as the vcf sample ids (while we dont use a ped file)
 probandId: </the file name of proband cram without the ext.>
 parent1Id: <the file name of one parent cram without the ext.>
 parent2Id: <the file name of other parent cram without the ext.>
