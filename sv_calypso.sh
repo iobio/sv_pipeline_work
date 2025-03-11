@@ -1,28 +1,104 @@
 #!/bin/bash
 
-# ===================================== Input variables
-# The ID we should look for in the VCF
-PROBANDID=$1
+#SBATCH --job-name=<any_name_you_want>
+#SBATCH --time=14:00:00
 
-# The links to the cram files
-#   If we are using a link that should be okay if we are using file paths we need to rework this
-#   smoove-duphold is a singularity container and to use paths we need to bind the folders to the container at run so that it has access
-PROBAND_CRAM=$2
-PARENT1_CRAM=$3
-PARENT2_CRAM=$4
-INPUT_VCF=$5
+# Your Account and Partition as Applicable
+#SBATCH --account=marth-rw
+#SBATCH --partition=marth-shared-rw
 
-# Allowed: smoove, dragen, manta
-VCF_TYPE=$6
-# Allowed: GRCh37 or GRCh38
-BUILD=$7
+# Output in your directory from where the script is launched
+#SBATCH -o ./slurm-%j.out-%N
+#SBATCH -e ./slurm-%j.err-%N
+
+#SBATCH --ntasks=10
+#SBATCH --mem=60G
+#SBATCH --mail-type=ALL
+
+# The email to send system messages to
+#SBATCH --mail-user=<your_email>
+
+# ===================================== Help message
+if [[ "$1" == "--help" ]]; then
+    echo "Usage: $0 [options] PROBAND_ID INPUT_VCF VCF_TYPE BUILD [CRAMS_PATH PARENT1_ID PARENT2_ID]"
+    echo ""
+    echo "Options:"
+    echo "  --help                Show this help message"
+    echo "  --config FILE         Use a configuration yaml file for input variables"
+
+    echo "Notes:"
+    echo ""
+    echo " * If using --config, all other options are ignored"
+    echo " * If VCF_TYPE is 'smoove' then CRAMS_PATH, PARENT1_ID, and PARENT2_ID are not required"
+    echo " * BUILD must be either 'GRCh37' or 'GRCh38'"
+    echo " * VCF_TYPE must be either 'smoove', 'dragen', or 'manta'"
+    exit 0
+fi
+
+# ===================================== Configuration file handling
+if [[ "$1" == "--config" ]]; then
+    CONFIG_FILE=$2
+
+    if [[ ! -f "$CONFIG_FILE" ]]; then
+        echo "Error: Configuration file not found!"
+        exit 1
+    fi
+
+    # Set default value to null if not found
+    PROBAND_ID=${PROBAND_ID:-""}
+    INPUT_VCF=${INPUT_VCF:-""}
+    VCF_TYPE=${VCF_TYPE:-""}
+    BUILD=${BUILD:-""}
+    CRAMS_PATH=${CRAMS_PATH:-""}
+    PARENT1_ID=${PARENT1_ID:-""}
+    PARENT2_ID=${PARENT2_ID:-""}
+
+    PROBAND_ID=$(grep 'PROBAND_ID:' "$CONFIG_FILE" | awk '{print $2}')
+    INPUT_VCF=$(grep 'INPUT_VCF:' "$CONFIG_FILE" | awk '{print $2}')
+    VCF_TYPE=$(grep 'VCF_TYPE:' "$CONFIG_FILE" | awk '{print $2}')
+    BUILD=$(grep 'BUILD:' "$CONFIG_FILE" | awk '{print $2}')
+    CRAMS_PATH=$(grep 'CRAMS_PATH:' "$CONFIG_FILE" | awk '{print $2}')
+    PARENT1_ID=$(grep 'PARENT1_ID:' "$CONFIG_FILE" | awk '{print $2}')
+    PARENT2_ID=$(grep 'PARENT2_ID:' "$CONFIG_FILE" | awk '{print $2}')
+else
+    # The ID we should look for in the VCF
+    PROBAND_ID=$1
+    # The path to the input VCF file
+    INPUT_VCF=$2
+    # Allowed: smoove, dragen, manta
+    VCF_TYPE=$3
+    # Allowed: GRCh37 or GRCh38
+    BUILD=$4
+    if [[ "$VCF_TYPE" != "smoove" ]]; then
+        CRAMS_PATH=$5
+        PARENT1_ID=$6
+        PARENT2_ID=$7
+    else 
+        CRAMS_PATH=""
+        PARENT1_ID=""
+        PARENT2_ID=""
+    fi
+fi
+
+# Check if all required variables are set
+if [[ -z "$PROBAND_ID" || -z "$INPUT_VCF" || -z "$VCF_TYPE" || -z "$BUILD" ]]; then
+    echo "Error: Missing required input variables."
+    echo "Use --help for usage information."
+    exit 1
+fi
+
+if [[ "$VCF_TYPE" != "smoove" && ( -z "$CRAMS_PATH" || -z "$PARENT1_ID" || -z "$PARENT2_ID" ) ]]; then
+    echo "Error: Missing required CRAM files for non-smoove VCF type."
+    echo "Use --help for usage information."
+    exit 1
+fi
 
 # Assign the ref fasta and fasta folder depending on the build
 # This will only be used ultimately if we run duphold (i.e. we don't have a smoove file)
-if [[ BUILD == "GRCh37"]]; then
+if [[ $BUILD == "GRCh37" ]]; then
     REF_FASTA="human_g1k_v37_decoy_phix.fasta"
     FASTA_FOLDER="/scratch/ucgd/lustre-core/common/data/Reference/GRCh37"
-elif [[ BUILD == "GRCh38"]]; then
+elif [[ $BUILD == "GRCh38" ]]; then
     REF_FASTA="human_g1k_v38_decoy_phix.fasta"
     FASTA_FOLDER="/scratch/ucgd/lustre/common/data/Reference/GRCh38"
 else
@@ -38,7 +114,7 @@ SVAF_OUTPUT="svaf_annot.vcf"
 FILTERED_VCF="calypso_filtered_svs.vcf.gz"
 
 # ===================================== Begin Setup
-FOLDERNAME=${PROBANDID}_calypso_sv
+FOLDERNAME=${PROBAND_ID}_calypso_sv
 SCRDIR=./$FOLDERNAME
 mkdir $SCRDIR
 cd $SCRDIR
@@ -51,6 +127,7 @@ cp \
     /scratch/ucgd/lustre-labs/marth/scratch/u1069837/data/sv_pipeline_work/ref_files/SVAFotate_core_SV_popAFs.GRCh38.v4.1.bed.gz \
     .
 
+# Creating this here because even if it is empty and ultimately isn't used it is part of the cleanup so I want to make sure it is created anyway
 mkdir "duphold_run"
 
 # Load the miniconda3 module will be needed for the doctor_manta.py and for the svafotate run
@@ -64,6 +141,10 @@ ENV_NAME="sv_pipe_conda_env"
 if conda info --envs | grep -q "$ENV_NAME"; then
     conda activate "$ENV_NAME"
 else
+    if [[ ! -f "sv_pipe.yml" ]]; then
+        echo "Error: sv_pipe.yml file not found!"
+        exit 1
+    fi
     conda env create -f sv_pipe.yml
     conda activate "$ENV_NAME"
     
@@ -72,7 +153,7 @@ else
 fi
 
 # If we have something other than a smoove vcf then we need to doctor the VCF and then run duphold before svafotate
-if [[ VCF_TYPE != "smoove" ]]; then
+if [[ $VCF_TYPE != "smoove" ]]; then
     python doctor_manta.py $INPUT_VCF $DH_DOCTORED_OUTPUT
 
     BIND_DIR=$(pwd -P)
@@ -82,13 +163,14 @@ if [[ VCF_TYPE != "smoove" ]]; then
     echo "Run Duphold"
     singularity exec \
         --bind $BIND_DIR/duphold_run:/output \
+        --bind $CRAMSPATH:/crams \
         --bind $FASTA_FOLDER:/fastas \
         bp_smoove.sif \
         smoove duphold \
         -f /fastas/$REF_FASTA  \
         -v /output/$DH_DOCTORED_OUTPUT \
         -o /output/$DUPHOLD_OUTPUT \
-        $PROBAND_CRAM $PARENT1_CRAM $PARENT2_CRAM
+        /crams/$PROBAND_ID.cram /crams/$PARENT1_ID.cram /crams/$PARENT2_ID.cram
     echo "duphold complete"
 
     # Move the duphold output to the main folder for use in svafotate
@@ -96,7 +178,7 @@ if [[ VCF_TYPE != "smoove" ]]; then
 
     # Run svafotate
     echo "running svafotate"
-    svafotate annotate -v $DUPHOLD_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh37.v4.1.bed.gz -o $SVAF_OUTPUT -f 0.8 --cpu 12
+    svafotate annotate -v $DUPHOLD_OUTPUT -b SVAFotate_core_SV_popAFs.GRCh37.v4.1.bed.gz -o $SVAF_OUTPUT -f 0.8 --cpu 10
     bgzip $SVAF_OUTPUT
     echo "svafotate complete"
 
@@ -105,7 +187,7 @@ if [[ VCF_TYPE != "smoove" ]]; then
 # If it is smoove duphold has already been run just run svafotate
 else
     echo "running svafotate"
-    svafotate annotate -v $INPUT_VCF -b SVAFotate_core_SV_popAFs.GRCh37.v4.1.bed.gz -o $SVAF_OUTPUT -f 0.8 --cpu 12
+    svafotate annotate -v $INPUT_VCF -b SVAFotate_core_SV_popAFs.GRCh37.v4.1.bed.gz -o $SVAF_OUTPUT -f 0.8 --cpu 10
     bgzip $SVAF_OUTPUT
     echo "svafotate complete"
 
@@ -118,7 +200,7 @@ PROB_INDEX=-1
 
 # Find the index of the proband sample in the SAMPLES array
 for i in "${!SAMPLES[@]}"; do
-    if [[ "${SAMPLES[$i]}" == "$PROBANDID" ]]; then
+    if [[ "${SAMPLES[$i]}" == "$PROBAND_ID" ]]; then
         PROB_INDEX=$i
         break
     fi
@@ -131,10 +213,10 @@ if [[ "$PROB_INDEX" -lt 0 ]]; then
 fi
 
 # Construct the bcftools command using the dynamically determined indices
-bcftools view -i '((INFO/SVTYPE="DEL" && FMT/DHFFC['"$PROB_INDEX"']<0.7) || \
-                   (INFO/SVTYPE="DUP" && FMT/DHBFC['"$PROB_INDEX"']>1.3) || \
-                   (INFO/SVTYPE!="DEL" && INFO/SVTYPE!="DUP")) && \
-                   INFO/Max_AF<0.05' "$SVAF_OUTPUT.gz" -Oz -o "$FILTERED_VCF"
+bcftools view -i "((INFO/SVTYPE=\"DEL\" && FMT/DHFFC[$PROB_INDEX]<0.7) || \
+                   (INFO/SVTYPE=\"DUP\" && FMT/DHBFC[$PROB_INDEX]>1.3) || \
+                   (INFO/SVTYPE!=\"DEL\" && INFO/SVTYPE!=\"DUP\")) && \
+                   INFO/Max_AF<0.05" "$SVAF_OUTPUT.gz" -Oz -o "$FILTERED_VCF"
 
 # Cleanup
 rm bp_smoove.sif \
